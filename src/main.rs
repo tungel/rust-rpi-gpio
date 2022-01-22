@@ -10,8 +10,8 @@ use rppal::system::DeviceInfo;
 const GPIO_FAN: u8 = 14;
 
 const ON_THRESHOLD: f32 = 52.0; // (degrees Celsius) Fan turns on at this temperature.
-const OFF_THRESHOLD: f32 = 49.0; // (degress Celsius) Fan turns off at this temperature.
-const SLEEP_INTERVAL: u64 = 5; // (seconds) How often we check the core temperature.
+const OFF_THRESHOLD: f32 = 48.0; // (degress Celsius) Fan turns off at this temperature.
+const SLEEP_INTERVAL: u64 = 30; // (seconds) How often we check the core temperature.
 
 fn get_temp() -> String {
     let output = Command::new("sh")
@@ -19,6 +19,14 @@ fn get_temp() -> String {
         .output()
         .expect("failed to execute process");
     String::from_utf8(output.stdout).expect("Failed to convert output to String")
+}
+
+fn write_log(temp_float: f32) {
+    let msg = format!("{}{}", "Current temp is: ", temp_float);
+    println!("{}", msg);
+    Command::new("logger")
+        .args(["-p", "notice", "-t", "tungle", &msg])
+        .output();
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -42,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         vec = split.collect::<Vec<&str>>();
 
         let temp_float: f32 = vec[0].parse().unwrap();
-        println!("Current temp is: {}", temp_float);
+        write_log(temp_float);
 
         if temp_float > ON_THRESHOLD {
             pin.set_high();
